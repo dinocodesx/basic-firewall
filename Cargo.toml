@@ -1,0 +1,30 @@
+[package]
+name = "rust-firewall"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+# Packet capture and construction
+pnet = "0.35"
+pcap = "1.3"
+
+# Netfilter queue (actual packet dropping in kernel)
+nfqueue = "0.9.1"
+
+# Async runtime
+tokio = { version = "1", features = ["full"] }
+
+# Config file parsing
+toml = "0.8"
+serde = { version = "1", features = ["derive"] }
+
+# Logging
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+
+# CLI
+clap = { version = "4", features = ["derive"] }
+
+# Utility
+anyhow = "1"         # ergonomic error handling
+chrono = "0.4"       # timestamps in logs
