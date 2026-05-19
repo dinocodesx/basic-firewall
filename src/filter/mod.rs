@@ -75,7 +75,7 @@ fn nfqueue_callback(msg: &Message, state: &mut FirewallState) {
         None => (Verdict::Accept, Action::Accept, "non-ipv4-passthrough".to_string()),
     };
 
-    if verdict == Verdict::Drop {
+    if matches!(verdict, Verdict::Drop) {
         println!("[BLOCK] Rule: {}", rule_name_log);
     }
 
