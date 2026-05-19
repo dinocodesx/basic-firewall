@@ -1,4 +1,5 @@
 mod capture;
+mod parser;
 
 fn main() {
     println!("--- Rust Firewall Sniffer ---");

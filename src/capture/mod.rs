@@ -1,7 +1,7 @@
 pub mod interface;
 
+use crate::parser::parse_packet;
 use pnet::datalink::{Channel, Config};
-use pnet::packet::ethernet::EthernetPacket;
 use std::time::Duration;
 
 // Re-export list_interfaces so main.rs doesn't break
@@ -11,7 +11,7 @@ pub fn start_capture(interface_name: &str) {
     let interface = interface::get_interface(interface_name)
         .expect("Network interface not found");
 
-    // Configure the channel (we can add more config here later if needed)
+    // Configure the channel
     let config = Config {
         read_timeout: Some(Duration::from_millis(100)),
         ..Default::default()
@@ -28,13 +28,24 @@ pub fn start_capture(interface_name: &str) {
     loop {
         match rx.next() {
             Ok(packet) => {
-                if let Some(eth_packet) = EthernetPacket::new(packet) {
+                if let Some(parsed) = parse_packet(packet) {
+                    let transport_info = match (&parsed.src_port, &parsed.dst_port) {
+                        (Some(src), Some(dst)) => format!("{}:{} -> {}:{}", parsed.src_ip, src, parsed.dst_ip, dst),
+                        _ => format!("{} -> {}", parsed.src_ip, parsed.dst_ip),
+                    };
+
                     println!(
-                        "[PACKET] src_mac={} dst_mac={} ethertype={:?}",
-                        eth_packet.get_source(),
-                        eth_packet.get_destination(),
-                        eth_packet.get_ethertype()
+                        "[PARSED] {:?} {} | Length: {} | TTL: {}",
+                        parsed.protocol,
+                        transport_info,
+                        parsed.payload_len,
+                        parsed.ttl
                     );
+
+                    if let Some(flags) = parsed.tcp_flags {
+                        println!("         TCP Flags: [SYN: {}, ACK: {}, FIN: {}, RST: {}]", 
+                            flags.syn, flags.ack, flags.fin, flags.rst);
+                    }
                 }
             }
             Err(e) => {
