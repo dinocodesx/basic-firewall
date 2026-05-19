@@ -1,13 +1,10 @@
-mod capture;
-mod cli;
-mod filter;
-mod logger;
-mod parser;
-mod rules;
-mod state;
-
 use clap::Parser;
-use cli::{Cli, Commands, Mode, RuleAction};
+use rust_firewall::capture;
+use rust_firewall::cli::{Cli, Commands, Mode, RuleAction};
+use rust_firewall::filter;
+use rust_firewall::logger;
+use rust_firewall::rules;
+use rust_firewall::state;
 
 fn main() {
     let args = Cli::parse();
