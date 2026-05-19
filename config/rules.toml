@@ -1,0 +1,36 @@
+[defaults]
+policy = "accept"   # Default policy: "accept" or "drop"
+
+[[rules]]
+name        = "Block Telnet"
+direction   = "inbound"
+protocol    = "TCP"
+dst_port    = 23
+action      = "drop"
+
+[[rules]]
+name        = "Block specific IP"
+direction   = "inbound"
+src_ip      = "192.168.1.100"
+action      = "drop"
+
+[[rules]]
+name        = "Allow DNS"
+direction   = "outbound"
+protocol    = "UDP"
+dst_port    = 53
+action      = "accept"
+
+[[rules]]
+name        = "Allow HTTP/HTTPS"
+direction   = "outbound"
+protocol    = "TCP"
+dst_port    = 80
+action      = "accept"
+
+[[rules]]
+name        = "Allow HTTPS"
+direction   = "outbound"
+protocol    = "TCP"
+dst_port    = 443
+action      = "accept"

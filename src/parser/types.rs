@@ -8,6 +8,7 @@ pub enum Protocol {
     Unknown(u8),
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Clone)]
 pub struct TcpFlags {
     pub syn: bool,
@@ -18,6 +19,7 @@ pub struct TcpFlags {
     pub urg: bool,
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Clone)]
 pub struct ParsedPacket {
     // Ethernet layer
