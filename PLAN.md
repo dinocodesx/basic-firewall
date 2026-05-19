@@ -1,4 +1,4 @@
-# 🔥 Building a Basic Firewall in Rust — Project Plan
+# Building a Basic Firewall in Rust — Project Plan
 
 ## Table of Contents
 1. [Project Overview](#1-project-overview)
