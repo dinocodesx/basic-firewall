@@ -13,8 +13,6 @@ use crate::state::update_state;
 use crate::rules::types::Config;
 use crate::state::table::{create_table, ConnTable};
 
-pub mod verdict;
-
 /// Holds the shared state for the active firewall.
 #[allow(dead_code)]
 pub struct FirewallState {

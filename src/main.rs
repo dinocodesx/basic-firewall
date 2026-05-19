@@ -34,13 +34,22 @@ fn main() {
     }
 }
 
-fn run_firewall(mode: Mode, interface: Option<String>, config: rules::types::Config, state_table: state::table::ConnTable) {
+fn run_firewall(
+    mode: Mode,
+    interface: Option<String>,
+    config: rules::types::Config,
+    state_table: state::table::ConnTable,
+) {
     match mode {
         Mode::Sniff => {
             println!("[MODE] Passive Sniffer");
             let interfaces = capture::list_interfaces();
             let target = interface.unwrap_or_else(|| {
-                let default = if cfg!(target_os = "macos") { "en0" } else { "eth0" };
+                let default = if cfg!(target_os = "macos") {
+                    "en0"
+                } else {
+                    "eth0"
+                };
                 interfaces
                     .iter()
                     .find(|iface| iface.name == default && iface.is_up())
@@ -85,7 +94,9 @@ fn handle_rules_command(action: RuleAction, config: rules::types::Config) {
                     rule.action,
                     rule.protocol.unwrap_or_else(|| "Any".to_string()),
                     rule.src_ip.unwrap_or_else(|| "Any".to_string()),
-                    rule.dst_port.map(|p| p.to_string()).unwrap_or_else(|| "Any".to_string()),
+                    rule.dst_port
+                        .map(|p| p.to_string())
+                        .unwrap_or_else(|| "Any".to_string()),
                     rule.direction.unwrap_or_else(|| "Any".to_string())
                 );
             }
