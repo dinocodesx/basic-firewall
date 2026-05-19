@@ -53,15 +53,22 @@ pub enum RuleAction {
     List,
     /// Add a new rule (Note: Currently only updates the local config file)
     Add {
-        #[arg(long)] name: String,
-        #[arg(long)] proto: Option<String>,
-        #[arg(long)] src_ip: Option<String>,
-        #[arg(long)] dst_ip: Option<String>,
-        #[arg(long)] dst_port: Option<u16>,
-        #[arg(long)] action: String,
+        #[arg(long)]
+        name: String,
+        #[arg(long)]
+        proto: Option<String>,
+        #[arg(long)]
+        src_ip: Option<String>,
+        #[arg(long)]
+        dst_ip: Option<String>,
+        #[arg(long)]
+        dst_port: Option<u16>,
+        #[arg(long)]
+        action: String,
     },
     /// Remove a rule by name
     Remove {
-        #[arg(long)] name: String,
+        #[arg(long)]
+        name: String,
     },
 }

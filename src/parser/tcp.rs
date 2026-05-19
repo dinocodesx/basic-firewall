@@ -1,5 +1,5 @@
-use pnet::packet::tcp::TcpPacket;
 use crate::parser::types::TcpFlags;
+use pnet::packet::tcp::TcpPacket;
 
 pub fn parse_tcp(payload: &[u8]) -> Option<(u16, u16, TcpFlags)> {
     let tcp = TcpPacket::new(payload)?;

@@ -1,5 +1,5 @@
 #[cfg(target_os = "linux")]
-use nfqueue::{Message, Queue, Verdict, CopyMode};
+use nfqueue::{CopyMode, Message, Queue, Verdict};
 
 #[cfg(target_os = "linux")]
 use crate::parser::parse_packet;
@@ -11,7 +11,7 @@ use crate::rules::types::Action;
 use crate::state::update_state;
 
 use crate::rules::types::Config;
-use crate::state::table::{ConnTable, create_table};
+use crate::state::table::{create_table, ConnTable};
 
 pub mod verdict;
 
@@ -25,7 +25,7 @@ pub struct FirewallState {
 impl FirewallState {
     #[allow(dead_code)]
     pub fn new(config: Config) -> Self {
-        Self { 
+        Self {
             config,
             state_table: create_table(),
         }
@@ -39,11 +39,11 @@ pub fn start_nfqueue(config: Config, queue_num: u16) {
     let mut queue = Queue::new(state);
 
     queue.open();
-    
+
     if queue.bind(2) < 0 {
         panic!("Failed to bind to nfqueue. Are you running as root?");
     }
-    
+
     queue.create_queue(queue_num, nfqueue_callback);
     queue.set_mode(CopyMode::CopyPacket, 0xffff);
 
@@ -60,19 +60,21 @@ fn nfqueue_callback(msg: &Message, state: &mut FirewallState) {
     let (verdict, _action_log, rule_name_log) = match parse_packet(payload) {
         Some(packet) => {
             let (action, rule_name) = evaluate(&packet, &state.config, &state.state_table);
-            
+
             let v = match action {
                 Action::Accept => {
                     update_state(&state.state_table, &packet);
                     Verdict::Accept
                 }
-                Action::Drop => {
-                    Verdict::Drop
-                }
+                Action::Drop => Verdict::Drop,
             };
             (v, action, rule_name)
         }
-        None => (Verdict::Accept, Action::Accept, "non-ipv4-passthrough".to_string()),
+        None => (
+            Verdict::Accept,
+            Action::Accept,
+            "non-ipv4-passthrough".to_string(),
+        ),
     };
 
     if matches!(verdict, Verdict::Drop) {

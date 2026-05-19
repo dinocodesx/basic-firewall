@@ -12,8 +12,8 @@ pub enum ConnState {
 
 #[derive(Debug, Clone, Hash, Eq, PartialEq)]
 pub struct ConnKey {
-    pub src_ip:   Ipv4Addr,
-    pub dst_ip:   Ipv4Addr,
+    pub src_ip: Ipv4Addr,
+    pub dst_ip: Ipv4Addr,
     pub src_port: u16,
     pub dst_port: u16,
     pub protocol: String,
@@ -22,8 +22,8 @@ pub struct ConnKey {
 #[allow(dead_code)]
 #[derive(Debug, Clone)]
 pub struct ConnEntry {
-    pub state:      ConnState,
-    pub last_seen:  i64, // Unix timestamp for timeout handling
+    pub state: ConnState,
+    pub last_seen: i64, // Unix timestamp for timeout handling
 }
 
 /// A thread-safe table for tracking connection states.

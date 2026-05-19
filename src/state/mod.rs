@@ -7,7 +7,7 @@ use chrono::Utc;
 /// Updates the connection table based on the observed packet and its flags.
 pub fn update_state(table: &ConnTable, packet: &ParsedPacket) {
     // We only track state for TCP in this prototype
-    if packet.protocol != Protocol::TCP {
+    if packet.protocol != Protocol::Tcp {
         return;
     }
 
@@ -49,7 +49,13 @@ pub fn update_state(table: &ConnTable, packet: &ParsedPacket) {
         }
     };
 
-    map.insert(key, ConnEntry { state: new_state, last_seen: now });
+    map.insert(
+        key,
+        ConnEntry {
+            state: new_state,
+            last_seen: now,
+        },
+    );
 }
 
 /// Checks if a packet belongs to an established or recognized connection.
@@ -77,7 +83,7 @@ pub fn is_established(table: &ConnTable, packet: &ParsedPacket) -> bool {
     };
 
     let map = table.lock().expect("Failed to lock connection table");
-    
+
     map.contains_key(&key_forward) || map.contains_key(&key_reverse)
 }
 

@@ -1,8 +1,8 @@
-use tracing::info;
-use tracing_subscriber::{fmt, EnvFilter, prelude::*};
-use std::fs::OpenOptions;
 use crate::parser::types::ParsedPacket;
 use crate::rules::types::Action;
+use std::fs::OpenOptions;
+use tracing::info;
+use tracing_subscriber::{fmt, prelude::*, EnvFilter};
 
 /// Initializes the global logger to write JSON to a file.
 pub fn init_logger(log_path: &str) {
@@ -12,10 +12,7 @@ pub fn init_logger(log_path: &str) {
         .open(log_path)
         .expect("Cannot open or create log file");
 
-    let file_layer = fmt::layer()
-        .with_writer(file)
-        .with_ansi(false)
-        .json();
+    let file_layer = fmt::layer().with_writer(file).with_ansi(false).json();
 
     tracing_subscriber::registry()
         .with(EnvFilter::new("info"))

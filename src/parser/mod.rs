@@ -1,9 +1,9 @@
-pub mod types;
 pub mod ip;
 pub mod tcp;
+pub mod types;
 pub mod udp;
 
-use pnet::packet::ethernet::{EthernetPacket, EtherTypes};
+use pnet::packet::ethernet::{EtherTypes, EthernetPacket};
 use pnet::packet::ipv4::Ipv4Packet;
 use pnet::packet::Packet;
 use types::{ParsedPacket, Protocol};
@@ -28,20 +28,20 @@ pub fn parse_packet(raw: &[u8]) -> Option<ParsedPacket> {
     let mut tcp_flags = None;
 
     match protocol {
-        Protocol::TCP => {
+        Protocol::Tcp => {
             if let Some((src, dst, flags)) = tcp::parse_tcp(ipv4.payload()) {
                 src_port = Some(src);
                 dst_port = Some(dst);
                 tcp_flags = Some(flags);
             }
         }
-        Protocol::UDP => {
+        Protocol::Udp => {
             if let Some((src, dst)) = udp::parse_udp(ipv4.payload()) {
                 src_port = Some(src);
                 dst_port = Some(dst);
             }
         }
-        _ => {} // ICMP or Unknown - ports remain None
+        _ => {} // Icmp or Unknown - ports remain None
     }
 
     Some(ParsedPacket {

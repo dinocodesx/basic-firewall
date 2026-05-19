@@ -1,13 +1,17 @@
-pub mod types;
 pub mod loader;
+pub mod types;
 
 use crate::parser::types::{ParsedPacket, Protocol};
-use crate::state::table::ConnTable;
 use crate::state::is_established;
+use crate::state::table::ConnTable;
 use types::{Action, Config, Rule};
 
 /// Evaluates a packet against state and rules, returning an Action and the rule name.
-pub fn evaluate(packet: &ParsedPacket, config: &Config, state_table: &ConnTable) -> (Action, String) {
+pub fn evaluate(
+    packet: &ParsedPacket,
+    config: &Config,
+    state_table: &ConnTable,
+) -> (Action, String) {
     // 1. Check if the connection is already established (Stateful Inspection)
     if is_established(state_table, packet) {
         return (Action::Accept, "established-connection".to_string());
@@ -25,51 +29,45 @@ pub fn evaluate(packet: &ParsedPacket, config: &Config, state_table: &ConnTable)
         "drop" => Action::Drop,
         _ => Action::Accept,
     };
-    
+
     (default_action, "default-policy".to_string())
 }
-
-/// Checks if a single rule matches the given packet.
 fn matches_rule(packet: &ParsedPacket, rule: &Rule) -> bool {
-    // 1. Check Protocol
+    // Protocol match
     if let Some(ref rule_proto) = rule.protocol {
-        let packet_proto_str = match &packet.protocol {
-            Protocol::TCP => "TCP",
-            Protocol::UDP => "UDP",
-            Protocol::ICMP => "ICMP",
+        let proto_str = match packet.protocol {
+            Protocol::Tcp => "TCP",
+            Protocol::Udp => "UDP",
+            Protocol::Icmp => "ICMP",
             Protocol::Unknown(_) => "UNKNOWN",
         };
-        if rule_proto.to_uppercase() != packet_proto_str {
+        if rule_proto.to_uppercase() != proto_str {
             return false;
         }
     }
 
-    // 2. Check Source IP
-    if let Some(ref rule_src_ip) = rule.src_ip {
-        if packet.src_ip.to_string() != *rule_src_ip {
-            return false;
-        }
+    // IP matches
+    if rule
+        .src_ip
+        .as_ref()
+        .map_or(false, |ip| packet.src_ip.to_string() != *ip)
+    {
+        return false;
+    }
+    if rule
+        .dst_ip
+        .as_ref()
+        .map_or(false, |ip| packet.dst_ip.to_string() != *ip)
+    {
+        return false;
     }
 
-    // 3. Check Destination IP
-    if let Some(ref rule_dst_ip) = rule.dst_ip {
-        if packet.dst_ip.to_string() != *rule_dst_ip {
-            return false;
-        }
+    // Port matches
+    if rule.src_port.is_some() && packet.src_port != rule.src_port {
+        return false;
     }
-
-    // 4. Check Source Port
-    if let Some(rule_src_port) = rule.src_port {
-        if packet.src_port != Some(rule_src_port) {
-            return false;
-        }
-    }
-
-    // 5. Check Destination Port
-    if let Some(rule_dst_port) = rule.dst_port {
-        if packet.dst_port != Some(rule_dst_port) {
-            return false;
-        }
+    if rule.dst_port.is_some() && packet.dst_port != rule.dst_port {
+        return false;
     }
 
     true

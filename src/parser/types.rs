@@ -2,9 +2,9 @@ use std::net::Ipv4Addr;
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Protocol {
-    TCP,
-    UDP,
-    ICMP,
+    Tcp,
+    Udp,
+    Icmp,
     Unknown(u8),
 }
 
