@@ -17,6 +17,43 @@ A high-performance, userspace stateful firewall written in Rust. This project de
 
 ---
 
+## 🛡️ What is a Firewall?
+
+A firewall is a network security system that monitors and controls incoming and outgoing network traffic based on predetermined security rules. It acts as a gatekeeper between a trusted internal network and untrusted external networks (like the Internet).
+
+### How it Works
+
+This prototype implements two primary methods of packet inspection:
+
+1.  **Stateless Packet Filtering:** Examines individual packets in isolation, looking at headers (source/destination IP, port, protocol) and matching them against a ruleset.
+2.  **Stateful Inspection:** Tracks the state of active connections (e.g., TCP handshakes). If a packet belongs to an already established session, it can be automatically accepted, bypassing the rule engine for better performance and reliability.
+
+### Packet Processing Flow
+
+The following diagram illustrates how this firewall evaluates each packet:
+
+```mermaid
+graph TD
+    A[Incoming/Outgoing Packet] --> B{Stateful Engine}
+    B -- "Match (Established)" --> C[ACCEPT]
+    B -- "No Match (New)" --> D{Rule Engine}
+    
+    D -- "Match Rule (Action: Accept)" --> C
+    D -- "Match Rule (Action: Drop)" --> E[DROP]
+    
+    D -- "No Rule Matched" --> F{Default Policy}
+    F -- "Accept" --> C
+    F -- "Drop" --> E
+
+    C --> G[Forward Packet]
+    E --> H[Discard Packet]
+    
+    style C fill:#d4edda,stroke:#28a745
+    style E fill:#f8d7da,stroke:#dc3545
+```
+
+---
+
 ## 🛠️ Architecture
 
 The firewall is built with a modular, thread-safe architecture:
