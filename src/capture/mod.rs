@@ -2,15 +2,18 @@ pub mod interface;
 
 use crate::parser::parse_packet;
 use crate::rules::evaluate;
-use crate::rules::types::Config;
+use crate::rules::types::{Config, Action};
+use crate::state::{update_state, table::ConnTable};
+use crate::logger::log_packet;
 use pnet::datalink::{Channel, Config as DatalinkConfig};
 use std::time::Duration;
 
 // Re-export list_interfaces so main.rs doesn't break
 pub use self::interface::list_interfaces;
 
-pub fn start_capture(interface_name: &str, config: Config) {
-    let interface = interface::get_interface(interface_name).expect("Network interface not found");
+pub fn start_capture(interface_name: &str, config: Config, state_table: ConnTable) {
+    let interface = interface::get_interface(interface_name)
+        .expect("Network interface not found");
 
     // Configure the channel
     let datalink_config = DatalinkConfig {
@@ -30,32 +33,33 @@ pub fn start_capture(interface_name: &str, config: Config) {
         match rx.next() {
             Ok(packet) => {
                 if let Some(parsed) = parse_packet(packet) {
-                    let verdict = evaluate(&parsed, &config);
+                    // 1. Evaluate packet against rules and connection state
+                    let (action, rule_name) = evaluate(&parsed, &config, &state_table);
+                    
+                    // 2. Audit the decision to the JSON log file
+                    log_packet(&parsed, &action, &rule_name);
+                    
+                    // 3. Update connection state table if the packet is accepted
+                    if action == Action::Accept {
+                        update_state(&state_table, &parsed);
+                    }
 
                     let transport_info = match (&parsed.src_port, &parsed.dst_port) {
-                        (Some(src), Some(dst)) => {
-                            format!("{}:{} -> {}:{}", parsed.src_ip, src, parsed.dst_ip, dst)
-                        }
+                        (Some(src), Some(dst)) => format!("{}:{} -> {}:{}", parsed.src_ip, src, parsed.dst_ip, dst),
                         _ => format!("{} -> {}", parsed.src_ip, parsed.dst_ip),
                     };
 
                     println!(
-                        "[{:?}] {:?} {} | Length: {} | TTL: {}",
-                        verdict, parsed.protocol, transport_info, parsed.payload_len, parsed.ttl
+                        "[{:?}] {:?} {} | Length: {} | Rule: {}",
+                        action,
+                        parsed.protocol,
+                        transport_info,
+                        parsed.payload_len,
+                        rule_name
                     );
-
-                    if let Some(flags) = parsed.tcp_flags {
-                        if flags.syn || flags.ack || flags.fin || flags.rst {
-                            println!(
-                                "TCP Flags: [SYN: {}, ACK: {}, FIN: {}, RST: {}]",
-                                flags.syn, flags.ack, flags.fin, flags.rst
-                            );
-                        }
-                    }
                 }
             }
             Err(e) => {
-                // Ignore timeouts from the channel config
                 if e.kind() != std::io::ErrorKind::TimedOut {
                     eprintln!("[ERROR] {}", e);
                 }

@@ -1,23 +1,32 @@
-pub mod loader;
 pub mod types;
+pub mod loader;
 
 use crate::parser::types::{ParsedPacket, Protocol};
+use crate::state::table::ConnTable;
+use crate::state::is_established;
 use types::{Action, Config, Rule};
 
-/// Evaluates a packet against the provided configuration and returns an Action (Accept/Drop).
-pub fn evaluate(packet: &ParsedPacket, config: &Config) -> Action {
+/// Evaluates a packet against state and rules, returning an Action and the rule name.
+pub fn evaluate(packet: &ParsedPacket, config: &Config, state_table: &ConnTable) -> (Action, String) {
+    // 1. Check if the connection is already established (Stateful Inspection)
+    if is_established(state_table, packet) {
+        return (Action::Accept, "established-connection".to_string());
+    }
+
+    // 2. Iterate over user-defined rules
     for rule in &config.rules {
         if matches_rule(packet, rule) {
-            // In a real firewall, we might log this match here.
-            return rule.action.clone();
+            return (rule.action.clone(), rule.name.clone());
         }
     }
 
-    // No rule matched — apply default policy
-    match config.defaults.policy.as_str() {
+    // 3. No rule matched — apply default policy
+    let default_action = match config.defaults.policy.as_str() {
         "drop" => Action::Drop,
         _ => Action::Accept,
-    }
+    };
+    
+    (default_action, "default-policy".to_string())
 }
 
 /// Checks if a single rule matches the given packet.
@@ -63,6 +72,5 @@ fn matches_rule(packet: &ParsedPacket, rule: &Rule) -> bool {
         }
     }
 
-    // If we reached here, all specified fields matched.
     true
 }

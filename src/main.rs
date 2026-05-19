@@ -2,19 +2,28 @@ mod capture;
 mod parser;
 mod rules;
 mod filter;
+mod state;
+mod logger;
 
 use std::env;
 
 fn main() {
     println!("--- 🔥 Rust Firewall Prototype ---");
 
-    // Load rules configuration
+    // 1. Initialize the Logger (Writes JSON to logs/firewall.log)
+    logger::init_logger("logs/firewall.log");
+    println!("[*] Logger initialized");
+
+    // 2. Load rules configuration
     let config = rules::loader::load_config("config/rules.toml")
         .expect("Failed to load config/rules.toml. Please ensure the file exists.");
-
+    
     println!("[*] Loaded {} rules", config.rules.len());
 
-    // Simple CLI argument handling for modes
+    // 3. Initialize the Connection Table (Stateful Inspection)
+    let state_table = state::table::create_table();
+
+    // 4. Handle modes
     let args: Vec<String> = env::args().collect();
     let mode = if args.len() > 1 {
         args[1].to_lowercase()
@@ -25,10 +34,8 @@ fn main() {
     match mode.as_str() {
         "sniff" => {
             println!("[MODE] Passive Sniffer");
-            // List available interfaces
             let interfaces = capture::list_interfaces();
-
-            // Attempt to find a suitable interface to listen on
+            
             let default_interface = if cfg!(target_os = "macos") {
                 "en0"
             } else {
@@ -40,7 +47,6 @@ fn main() {
                 .find(|iface| iface.name == default_interface && iface.is_up())
                 .map(|iface| iface.name.as_str())
                 .or_else(|| {
-                    // Fallback to the first up interface that isn't loopback
                     interfaces.iter()
                         .find(|iface| iface.is_up() && !iface.is_loopback())
                         .map(|iface| iface.name.as_str())
@@ -48,16 +54,17 @@ fn main() {
                 .expect("No suitable network interface found.");
 
             println!("[*] Selected interface: {}", target_iface);
-            capture::start_capture(target_iface, config);
+            
+            // Pass the state table to the capture loop
+            capture::start_capture(target_iface, config, state_table);
         }
         "block" => {
             println!("[MODE] Active Blocker (Linux NFQueue)");
-            // Check if we are on Linux
             if !cfg!(target_os = "linux") {
                 eprintln!("[ERROR] Active 'block' mode requires Linux Netfilter (nfqueue).");
                 std::process::exit(1);
             }
-
+            
             // Start the active blocker on Queue #0
             filter::start_nfqueue(config, 0);
         }
@@ -68,4 +75,3 @@ fn main() {
         }
     }
 }
-
